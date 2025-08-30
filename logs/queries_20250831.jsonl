@@ -1,0 +1,2 @@
+{"timestamp": "2025-08-31T01:54:47.536512", "event_type": "user_query", "query": "what is the topic of data", "user_id": null, "api_key_hash": "ed5a18fb", "additional_data": {"query_length": 25, "query_type": "text"}}
+{"timestamp": "2025-08-31T01:56:13.603053", "event_type": "user_query", "query": "tell me some content with with dollar currency", "user_id": null, "api_key_hash": "ed5a18fb", "additional_data": {"query_length": 46, "query_type": "text"}}

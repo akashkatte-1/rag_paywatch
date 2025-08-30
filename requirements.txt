@@ -11,3 +11,4 @@ faiss-cpu
 requests
 langchain-core
 langchain-experimental
+python-multipart
