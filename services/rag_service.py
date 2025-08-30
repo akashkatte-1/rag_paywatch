@@ -12,6 +12,20 @@ import os
 from langchain_core.messages import AIMessage, HumanMessage
 import io
 
+# <-- 1. ADD THIS IMPORT 
+# Assuming currency_service.py is in the same directory or accessible via path.
+# If main.py, rag_service.py and currency_service.py are in the same folder, this import will fail. 
+# Make sure your project structure is like:
+# main.py
+# - services/
+#   - __init__.py
+#   - rag_service.py
+#   - currency_service.py
+# Or adjust the import path accordingly. For example, 'from currency_service import get_exchange_rate'
+# if it is in the same folder.
+from .currency_service import get_exchange_rate
+
+
 class RAGService:
     def __init__(self):
         self.embeddings = OpenAIEmbeddings(model="text-embedding-ada-002", openai_api_key=os.getenv("OPENAI_API_KEY"))
@@ -85,7 +99,6 @@ class RAGService:
             The 'experience' input should be an exact string, for example, '2y 6m'.
             """
             try:
-                # Filter the DataFrame for the exact experience string
                 filtered_df = self.df[self.df['Exp'].astype(str) == experience]
                 
                 if filtered_df.empty:
@@ -96,12 +109,23 @@ class RAGService:
             except Exception as e:
                 return f"An error occurred: {e}"
 
-        tools = [retrieve_documents, get_all_ctc_values, get_exp_locations]
+        # <-- 2. ADD THE get_exchange_rate TOOL TO THIS LIST
+        tools = [retrieve_documents, get_all_ctc_values, get_exp_locations, get_exchange_rate]
 
         llm = ChatOpenAI(temperature=0, model="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
+        
+        # <-- 3. (RECOMMENDED) ENHANCED PROMPT
         prompt = ChatPromptTemplate.from_messages(
             [
-                ("system", "You are a helpful assistant whi can give answers based on provided excel data with access to tools. Your goal is to provide accurate answers to the user's questions based in given excel data. Use the tools when necessary. and do calculations if required. If you need to convert currency, use the get_exchange_rate tool. and provide the final answer in USD currency. Be aware about all the columns in the data: Skills, Exp (y means years, m means months e.g 2y 2m) means experiance, Location, CTC, Company search for result in these columns.and give accurate answers."),
+                ("system", """You are a helpful assistant with access to tools for analyzing candidate data from an Excel file.
+- The data columns include: 'Skills', 'Exp' (experience, e.g., 2y 6m), 'Location', 'CTC', and 'Company'.
+- IMPORTANT: All 'CTC' values in the source data are in Indian Rupees (INR).
+- Your primary goal is to provide accurate answers based on this data.
+- When a user asks about CTC or any monetary value, you MUST:
+  1. Find the relevant CTC value in INR from the data.
+  2. Use the 'get_exchange_rate' tool to get the conversion rate from 'INR' to 'USD'.
+  3. Calculate the final value in USD.
+  4. Provide the final answer to the user ONLY in USD, clearly stating the currency."""),
                 AIMessage(content="I'm ready to help. What is your question?"),
                 ("human", "{input}"),
                 ("placeholder", "{agent_scratchpad}"),
@@ -111,6 +135,3 @@ class RAGService:
         agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
         return agent_executor
-    
-    
-    
