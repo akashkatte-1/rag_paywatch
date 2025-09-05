@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "rezoomex-mcp": {
+      "command": "node",
+      "args": [
+        ""
+      ],
+      "env": {
+        "LOCAL": "false",
+        "TOKEN_SERVER_URL": "https://rezoomex-mcp-server.onrender.com",
+        "REZOOMEX_USERNAME": "kulkarnichaitanya001@gmail.com",
+        "REZOOMEX_PASSWORD": "Vishnu@rezoomex"
+      }
+    }
+  },
+  "chat.mcp.serverSampling": {
+    "Rezoomex_paywatch/.vscode/mcp.json: my-mcp-server-351bfe83": {
+      "allowedModels": [
+        "copilot/gpt-4.1"
+      ]
+    }
+  }
+}

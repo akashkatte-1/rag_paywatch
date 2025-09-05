@@ -44,22 +44,24 @@ async def upload_excel_file(file: UploadFile = File(...), api_key: str = Depends
                 user_id=user_id,
                 api_key_hash=api_key_hash
             )
-            
-            if rag_service.ingest_data(file_content):
+            try:
+                if rag_service.ingest_data(file_content):
                 return UploadStatus(message="Data ingested successfully!", index_name="in-memory-faiss")
-            else:
-                error_msg = "Failed to ingest data. Check file format or content."
-                logging_service.log_error(
-                    error_message=error_msg,
-                    error_type="ingestion_error",
-                    user_id=user_id,
-                    api_key_hash=api_key_hash,
-                    additional_data={"filename": file.filename, "file_size": file_size}
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error_msg
-                )
+            except Exception as e :
+                return
+            # else:
+            #     error_msg = "Failed to ingest data. Check file format or content."
+            #     logging_service.log_error(
+            #         error_message=error_msg,
+            #         error_type="ingestion_error",
+            #         user_id=user_id,
+            #         api_key_hash=api_key_hash,
+            #         additional_data={"filename": file.filename, "file_size": file_size}
+            #     )
+            #     raise HTTPException(
+            #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            #         detail=error_msg
+            #     )
         else:
             error_msg = "Invalid file type. Please upload an Excel (.xlsx, .xls) file."
             logging_service.log_error(

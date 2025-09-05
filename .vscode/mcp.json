@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"my-mcp-server-351bfe83": {
+			"url": "https://mcp.rezoomex.com/v1/sse",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}

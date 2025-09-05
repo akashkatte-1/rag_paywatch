@@ -1,0 +1,152 @@
+# PayWatch App - Backend Data Processing Documentation
+## Overview
+PayWatch is a salary distribution analysis system that processes raw salary data, validates it against quality standards, and transforms it into structured frequency distributions for visualization. This document details the complete backend data processing pipeline.
+### 1. Input Data Structure
+ Source Directory Organization: 
+data/
+└── <YEAR>/
+    └── <TECHNOLOGY>/
+        └── (<EXPERIENCE_RANGE>).csv
+ CSV File Format: 
+- Required fields: Name, Exp, Location, CTC
+- Example record: "John Doe,4.5 yrs,India,18.5"
+### 2. Experience Parsing Algorithm
+The system converts various experience formats to decimal years using this logic:
+Parsing Formula: 
+Total Experience (years) = Years + (Months / 12)
+ Supported Formats and Examples: 
+- "4 yrs 3 months" → 4 + (3/12) = 4.25 years
+- "5 years" → 5.0 years
+- "3.5" → 3.5 years (direct decimal)
+- "2 yrs 6 m" → 2 + (6/12) = 2.5 years
+- "4yrs" → 4.0 years
+### 3. Data Validation Rules
+Primary Validation Rule: 
+Each record must satisfy:
+CTC ≥ (2/3) × Experience (in years)
+ Validation Example: 
+- Experience: 4.5 years
+- Minimum CTC Threshold: (2/3) × 4.5 = 3.0 LPA
+- Record CTC: 18.5 LPA → Valid (18.5 ≥ 3.0)
+ Implementation Details: 
+- Records failing validation are excluded from processing
+- Validation reports are generated with details of invalid records
+- Hash-based change detection avoids reprocessing unchanged files
+### 4. Salary Bucketing Algorithm
+Step 1: Determine Salary Range 
+Min_CTC = Minimum valid CTC in dataset
+Max_CTC = Maximum valid CTC in dataset
+Step 2: Calculate Bucket Size 
+Bucket_Size = (Max_CTC - Min_CTC) / 10
+Step 3: Create Salary Buckets 
+Bucket_i = [Min_CTC + (i × Bucket_Size), Min_CTC + ((i+1) × Bucket_Size)]
+for i = 0 to 9
+Step 4: Calculate Hourly Rates 
+Hourly_Rate (INR) = (CTC × 100,000) / 2,112
+Where 2,112 = 8 hours/day × 22 days/month × 12 months/year
+ Step 5: Calculate Population Percentage 
+Percentage_i = (Count_in_Bucket_i / Total_Valid_Records) × 100
+Step 6: Filter Empty Buckets 
+Buckets with 0% population are excluded from output
+### 5. Currency Conversion Process
+Exchange Rate Integration: 
+- Real-time USD/INR exchange rate fetched from external API
+- Hourly rates converted to USD for visualization
+Conversion Formula: 
+Hourly_USD = Hourly_INR × (1 / Exchange_Rate) × 2
+*Note: The multiplication by 2 is a scaling factor for visualization purposes*
+### 6. Output Data Structure
+Processed Data Format: 
+json
+{
+  "metadata": {
+    "technology": "technology_name",
+    "experience": "experience_range",
+    "year": "year",
+    "location": "India"
+  },
+  "frequencyDistribution": [
+    {
+      "bucket": {
+        "ctc": {"min": min_ctc, "max": max_ctc},
+        "hourly": {"min": min_hourly, "max": max_hourly}
+      },
+      "percentage": percentage_value
+    }
+  ]
+}
+ Output Directory Structure: 
+public/data/
+└── <YEAR>/
+    └── <TECHNOLOGY>/
+        └── india/
+            └── <TECHNOLOGY>_<EXPERIENCE>_<YEAR>_india.json
+## Complete Processing Example
+### Input Data (CSV):
+Name,Exp,Location,CTC
+John Doe,4.5 yrs,India,18.5
+Jane Smith,5 yrs,India,22.0
+Bob Wilson,4 yrs 3 m,India,16.8
+### Processing Steps:
+ 1. Experience Parsing: 
+- John Doe: 4.5 years
+- Jane Smith: 5.0 years
+- Bob Wilson: 4.25 years
+ 2. Validation: 
+- Minimum thresholds: 3.0, 3.33, 2.83 LPA respectively
+- All records valid (18.5 ≥ 3.0, 22.0 ≥ 3.33, 16.8 ≥ 2.83)
+ 3. Salary Range Calculation: 
+- Min_CTC = 16.8 LPA
+- Max_CTC = 22.0 LPA
+- Range = 22.0 - 16.8 = 5.2 LPA
+ 4. Bucket Creation: 
+- Bucket_Size = 5.2 / 10 = 0.52 LPA
+- Bucket 0: [16.8, 17.32]
+- Bucket 1: [17.32, 17.84]
+- ...
+- Bucket 9: [21.48, 22.0]
+ 5. Hourly Rate Calculation (Example for 18.5 LPA): 
+Hourly_INR = (18.5 × 100,000) / 2,112 = 876 INR/hour
+ 6. Population Distribution: 
+- Count records in each bucket
+- Calculate percentages
+ 7. Exchange Rate Conversion (Example at 82 INR/USD): 
+Hourly_USD = 876 × (1/82) × 2 = $21.37/hour
+### Output Data (JSON):
+json
+{
+  "metadata": {
+    "technology": "java",
+    "experience": "4-6",
+    "year": "2024",
+    "location": "India"
+  },
+  "frequencyDistribution": [
+    {
+      "bucket": {
+        "ctc": {"min": 16.8, "max": 17.32},
+        "hourly": {"min": 796, "max": 820}
+      },
+      "percentage": 33.3
+    },
+    {
+      "bucket": {
+        "ctc": {"min": 20.44, "max": 20.96},
+        "hourly": {"min": 968, "max": 992}
+      },
+      "percentage": 33.3
+    },
+    {
+      "bucket": {
+        "ctc": {"min": 21.48, "max": 22.0},
+        "hourly": {"min": 1017, "max": 1041}
+      },
+      "percentage": 33.3
+    }
+  ]
+}
+*Note: Buckets with 0% population are excluded from the final output.*
+## Technology Coverage
+The system processes data for 47 technologies across 8 experience brackets, currently for the year 2024. The technology list includes programming languages, frameworks, platforms, and specialized roles.
+---
+*This documentation provides a comprehensive overview of the backend data processing pipeline, detailing the mathematical formulas, validation rules, and transformation processes that convert raw salary data into structured frequency distributions for visualization.*
